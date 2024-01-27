@@ -6,13 +6,9 @@ import { db } from "../config/dbConnection.js";
 // CREATE USER
 
 export const createUser = async (req, res) => {
-    const errors = validationResult(req);
+    // ... existing code ...
 
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { username, email, password, role } = req.body;
+    const { username, email, password, role, user_age, user_gender } = req.body;
 
     db.query(
         `SELECT * FROM users WHERE LOWER(email) = LOWER(${db.escape(email)});`,
@@ -29,7 +25,7 @@ export const createUser = async (req, res) => {
                         });
                     } else {
                         db.query(
-                            `INSERT INTO users (username, email, password, role) VALUES (${db.escape(username)}, ${db.escape(email)}, ${db.escape(hash)}, ${db.escape(role)});`,
+                            `INSERT INTO users (username, email, password, role, user_age, user_gender) VALUES (${db.escape(username)}, ${db.escape(email)}, ${db.escape(hash)}, ${db.escape(role)}, ${db.escape(user_age)}, ${db.escape(user_gender)});`,
                             (err, result) => {
                                 if (err) {
                                     return res.status(400).send({
@@ -111,14 +107,10 @@ export const getAllUsers = async (req, res) => {
 // UPDATE USER
 
 export const updateUser = async (req, res) => {
-    const errors = validationResult(req);
+    // ... existing code ...
 
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { username, email, password, role } = req.body;
-    const userId = req.params.userId; // Assuming you have userId in your route
+    const { username, email, password, role, user_age, user_gender } = req.body;
+    const userId = req.params.userId;
 
     // Check if the user with the provided userId exists
     db.query(
@@ -150,7 +142,9 @@ export const updateUser = async (req, res) => {
                     SET username = ${db.escape(username)},
                         email = ${db.escape(email)},
                         password = ${db.escape(hash)},
-                        role = ${db.escape(role)}
+                        role = ${db.escape(role)},
+                        user_age = ${db.escape(user_age)},
+                        user_gender = ${db.escape(user_gender)}
                     WHERE user_id = ${db.escape(userId)};
                 `;
 
