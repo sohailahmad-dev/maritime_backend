@@ -6,7 +6,11 @@ import { db } from "../config/dbConnection.js";
 // CREATE USER
 
 export const createUser = async (req, res) => {
-    // ... existing code ...
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
 
     const { username, email, password, role, user_age, user_gender } = req.body;
 
@@ -107,7 +111,11 @@ export const getAllUsers = async (req, res) => {
 // UPDATE USER
 
 export const updateUser = async (req, res) => {
-    // ... existing code ...
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
 
     const { username, email, password, role, user_age, user_gender } = req.body;
     const userId = req.params.userId;
