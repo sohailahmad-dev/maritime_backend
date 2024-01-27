@@ -27,8 +27,8 @@ app.use((err, req, res, next) => {
 
 });
 
-app.listen(8001, ()=> { 
-    console.log("Server is ruuning on port 8001.");
+app.listen(8000, ()=> { 
+    console.log("Server is ruuning on port 8000.");
 })
 
 
