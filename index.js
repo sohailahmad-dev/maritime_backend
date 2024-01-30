@@ -4,6 +4,8 @@ import bodyParser from 'body-parser';
 import  './config/dbConnection.js';
 import dotenv from 'dotenv';
 import userRoute from './routers/userRoute.js';
+import session from 'express-session';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
@@ -13,6 +15,19 @@ app.use(cors());
 app.use(express.json()); 
 app.use(bodyParser.json({ extended: true }));
 app.use(bodyParser.urlencoded({ extended: true }));
+
+
+app.use(
+    session({
+      secret: 'process.env.JWT_SECRET',
+      resave: false,
+      saveUninitialized: true,
+    })
+  );
+  
+  app.use(cookieParser());
+
+
 
 app.use('/api', userRoute);
 
