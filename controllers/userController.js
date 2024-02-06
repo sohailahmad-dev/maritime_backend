@@ -12,7 +12,7 @@ export const createUser = async (req, res) => {
         body('username').notEmpty().withMessage('Username is required'),
         body('email').isEmail().withMessage('Invalid email format'),
         body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-        // Add more validation rules as needed
+        // ... add more rules as needed
     ];
 
     // Apply validation rules
@@ -29,7 +29,7 @@ export const createUser = async (req, res) => {
 
     try {
         // Check if email already exists
-        const emailExists = await checkExistingEmail(req.body.email);
+        const emailExists = await checkExistingEmail(email);
 
         if (emailExists) {
             return res.status(409).send({
@@ -47,27 +47,32 @@ export const createUser = async (req, res) => {
             msg: "The user has been registered with us!"
         });
     } catch (error) {
-        console.error("Error:", error);
-        return res.status(500).send({
-            msg: "Internal Server Error"
-        });
+        if (error.code === 'ER_DUP_ENTRY') { // Check if the error is due to duplicate entry
+            return res.status(409).send({
+                msg: 'This email is already in use!'
+            });
+        } else {
+            console.error("Error:", error);
+            return res.status(500).send({
+                msg: "Internal Server Error"
+            });
+        }
     }
 };
 
-// Function to check if email already exists
+
 async function checkExistingEmail(email) {
     try {
         const existingUser = await db.query('SELECT * FROM users WHERE LOWER(email) = LOWER(?);', [email]);
 
-        return existingUser || existingUser.length > 0;
-        
-        // console.log(existingUser , "hiiiiiiiiiiiiiiiiiiiii")
-
+        return existingUser && existingUser.length > 0;
     } catch (error) {
         console.error("Error checking existing email:", error);
         throw error; // Rethrow the error to handle it in the calling function
     }
 }
+
+
 
 
 

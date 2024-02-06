@@ -33,4 +33,5 @@ userRouter.put('/update_user/:userId', authenticateJwt,  updateUser);
 // DELETE /api/user/:userId
 userRouter.delete('/delete_user/:userId', authenticateJwt,  deleteUser);
 
+
 export default userRouter;
