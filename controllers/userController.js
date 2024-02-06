@@ -8,12 +8,11 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // CREATE USER
 export const createUser = async (req, res) => {
-
     const validationRules = [
         body('username').notEmpty().withMessage('Username is required'),
         body('email').isEmail().withMessage('Invalid email format'),
         body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-        // ... add more rules as needed
+        // Add more validation rules as needed
     ];
 
     // Apply validation rules
@@ -29,30 +28,51 @@ export const createUser = async (req, res) => {
     const { username, email, password, role, user_age, user_gender } = req.body;
 
     try {
-        const existingUser = await db.query('SELECT * FROM users WHERE LOWER(email) = LOWER(?);', [email]);
+        // Check if email already exists
+        const emailExists = await checkExistingEmail(req.body.email);
 
-        if (existingUser && existingUser.length) {
-            return res.status(401).send({
-                msg: 'This user is already in use!'
+        if (emailExists) {
+            return res.status(409).send({
+                msg: 'This email is already in use!'
             });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-
+        // Proceed with user registration
         const result = await db.query(
             'INSERT INTO users (username, email, password, role, user_age, user_gender) VALUES (?, ?, ?, ?, ?, ?);',
-            [username, email, hashedPassword, role, user_age, user_gender]
+            [username, email, password, role, user_age, user_gender]
         );
 
         return res.status(201).send({
             msg: "The user has been registered with us!"
         });
     } catch (error) {
+        console.error("Error:", error);
         return res.status(500).send({
             msg: "Internal Server Error"
         });
     }
 };
+
+// Function to check if email already exists
+async function checkExistingEmail(email) {
+    try {
+        const existingUser = await db.query('SELECT * FROM users WHERE LOWER(email) = LOWER(?);', [email]);
+
+        return existingUser || existingUser.length > 0;
+        
+        // console.log(existingUser , "hiiiiiiiiiiiiiiiiiiiii")
+
+    } catch (error) {
+        console.error("Error checking existing email:", error);
+        throw error; // Rethrow the error to handle it in the calling function
+    }
+}
+
+
+
+
+
 
 // GET USER BY ID
 
@@ -162,7 +182,7 @@ export const updateUser = async (req, res) => {
             });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // const hashedPassword = await bcrypt.hash(password, 10);
 
         const updateUserQuery = `
             UPDATE users
@@ -170,7 +190,7 @@ export const updateUser = async (req, res) => {
             WHERE user_id = ?;
         `;
 
-        await db.query(updateUserQuery, [username, email, hashedPassword, role, user_age, user_gender, userId]);
+        await db.query(updateUserQuery, [username, email, password, role, user_age, user_gender, userId]);
 
         return res.status(200).send({
             msg: "User profile updated successfully!"
@@ -276,8 +296,6 @@ export const loginUser = async (req, res) => {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    // const userResult = await db.query('SELECT * FROM users WHERE LOWER(email) = LOWER(?);', [email]);
-
     db.query(
         `SELECT * FROM users WHERE email = ${db.escape(req.body.email)};`,
         (err, result) => {
@@ -289,38 +307,27 @@ export const loginUser = async (req, res) => {
 
             if (!result.length) {
                 return res.status(405).send({
-                    msg: "Incorrect"
+                    msg: "User not found"
                 });
             }
 
-            bcrypt.compare(
-                req.body.password,
-                result[0]['password'],
-                (bErr, bResult) => {
-                    if (bErr) {
-                        return res.status(501).send({
-                            msg: bErr
-                        });
-                    }
+            // Compare plain text password with stored password
+            if (req.body.password === result[0]['password']) {
+                // Passwords match, generate JWT token
+                const token = jwt.sign({ id: result[0]['user_id'] }, JWT_SECRET, { expiresIn: '1h' });
 
-                    if (bResult) {
-                        // console.log(JWT_SECRET);
-                        const token = jwt.sign({ id: result[0]['user_id'] }, JWT_SECRET, { expiresIn: '1h' })
-
-                        return res.status(200).send({
-                            msg: "login ",
-                            token,
-                            user: result[0]
-                        });
-
-                    }
-
-                    return res.status(111).send({
-                        msg: "email or pass invalid"
-                    });
-
-                }
-            );
+                return res.status(200).send({
+                    msg: "Login successful",
+                    token,
+                    user: result[0]
+                });
+            } else {
+                // Passwords do not match
+                return res.status(111).send({
+                    msg: "Email or password is invalid"
+                });
+            }
         }
-    )
-}
+    );
+};
+
