@@ -29,7 +29,7 @@ export const authenticateJwt = async (req, res, next) => {
 
         if (
             !req.headers.authentication ||
-            // !req.headers.authentication.startsWith('Bearer') || 
+            !req.headers.authentication.startsWith('Bearer') ||
             !req.headers.authentication.split(' ')[1]
 
         ) {
@@ -39,7 +39,7 @@ export const authenticateJwt = async (req, res, next) => {
         }
         // else {
         //     let token = req.headers.authentication.split(' ')[1];
-        //     console.log('Toke is : ', token)
+        //     console.log('Token is : ', token)
         // }
 
         next();
