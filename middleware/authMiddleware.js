@@ -1,27 +1,3 @@
-// import jwt from 'jsonwebtoken';
-
-// const jwtSecret = process.env.JWT_SECRET; // Replace with your actual secret key
-// // const jwtSecret = process.env.JWT_SECRET || 'uhUy7iKJ8989&*uiiuyh&uyhuj*&yj*uhj&*ujn*ij*u8UJHNU5tgh';
-
-// // Middleware to authenticate user using JWT
-// export const authenticateJwt = (req, res, next) => {
-//     // console.log(req)
-//     const token = req.header('x-auth-token');
-
-
-//     if (!token) {
-//         return res.status(401).json({ msg: 'No authorization token was found' });
-//     }
-
-//     try {
-//         const decoded = jwt.verify(token, jwtSecret);
-//         req.user = decoded.userId; // Assuming the payload has a userId property
-//         next();
-//     } catch (err) {
-//         return res.status(401).json({ msg: 'Invalid authorization token' });
-//     }
-// };
-
 
 export const authenticateJwt = async (req, res, next) => {
 
@@ -48,3 +24,7 @@ export const authenticateJwt = async (req, res, next) => {
         console.log(error.meesage)
     }
 };
+
+
+
+

@@ -29,24 +29,30 @@ export const createUser = async (req, res) => {
 
     try {
         // Check if email already exists
-        const emailExists = await checkExistingEmail(email);
+        checkEmailExists(email, (err, emailExists) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).send({ msg: 'Internal Server Error' });
+            }
 
-        if (emailExists) {
-            return res.status(409).send({
-                msg: 'This email is already in use!'
-            });
-        }
+            if (emailExists) {
+                return res.status(409).send({ msg: 'This email is already in use!' });
+            }
 
-        // Proceed with user registration
-        const result = await db.query(
-            'INSERT INTO users (username, email, password, role, user_age, user_gender) VALUES (?, ?, ?, ?, ?, ?);',
-            [username, email, password, role, user_age, user_gender]
-        );
-
-        return res.status(201).send({
-            msg: "The user has been registered with us!"
+            // Proceed with user registration
+            db.query(
+                'INSERT INTO users (username, email, password, role, user_age, user_gender) VALUES (?, ?, ?, ?, ?, ?);',
+                [username, email, password, role, user_age, user_gender],
+                (error, results) => {
+                    if (error) {
+                        console.error("Error:", error);
+                        return res.status(500).send({ msg: 'Internal Server Error' });
+                    }
+                    return res.status(201).send({ msg: 'The user has been registered with us!' });
+                }
+            );
         });
-    } catch (error) {
+    }  catch (error) {
         if (error.code === 'ER_DUP_ENTRY') { // Check if the error is due to duplicate entry
             return res.status(409).send({
                 msg: 'This email is already in use!'
@@ -60,31 +66,24 @@ export const createUser = async (req, res) => {
     }
 };
 
-
-async function checkExistingEmail(email) {
-    try {
-        const existingUser = await db.query('SELECT * FROM users WHERE LOWER(email) = LOWER(?);', [email]);
-
-        return existingUser && existingUser.length > 0;
-    } catch (error) {
-        console.error("Error checking existing email:", error);
-        throw error; // Rethrow the error to handle it in the calling function
-    }
-}
-
-
-
-
-
+const checkEmailExists = (email, callback) => {
+    db.query('SELECT * FROM users WHERE email = ?', [email], (err, results) => {
+      if (err) {
+        console.error(err);
+        return callback(err, null);
+      }
+  
+      callback(null, results.length > 0);
+    });
+  };
 
 
 
 // GET USER BY ID
 
-
 export const getUserById = async (req, res) => {
     // try {
-    const authToken = req.headers.authorization.split(' ')[1];
+    const authToken = req.headers.authentication.split(' ')[1];
     const decode = jwt.verify(authToken, JWT_SECRET);
 
     db.query('SELECT * FROM users WHERE user_id = ?', decode.id, function (error, result, fields) {
@@ -96,34 +95,6 @@ export const getUserById = async (req, res) => {
         })
     });
 
-
-    //     if (!result || result.length === 0) {
-    //         return res.status(404).send({
-    //             msg: 'User not found!'
-    //         });
-    //     }
-    //     // console.log(result);
-
-    //     const user = result[0];
-    //     return res.status(200).send({
-    //         user,
-    //         msg: "User details retrieved successfully!"
-    //     });
-    // } catch (error) {
-    //     if (error.name === 'JsonWebTokenError') {
-    //         return res.status(401).send({
-    //             msg: 'Invalid token'
-    //         });
-    //     } else if (error.name === 'TokenExpiredError') {
-    //         return res.status(401).send({
-    //             msg: 'Token expired'
-    //         });
-    //     } else {
-    //         return res.status(500).send({
-    //             msg: "Internal Server Error"
-    //         });
-    //     }
-    // }
 };
 
 
@@ -174,15 +145,15 @@ export const getAllUsers = async (req, res) => {
 export const updateUser = async (req, res) => {
     const { username, email, password, role, user_age, user_gender } = req.body;
     const userId = req.params.userId;
-    console.log("USR " + userId)
+    // console.log("USR " + userId)
 
     try {
-        console.log("In update user, Error occuring here");
+        // console.log("In update user, Error occuring here");
 
         const authToken = req.headers.authentication.split(' ')[1];
-        console.log("authToken", authToken)
+        // console.log("authToken", authToken)
         const decode = jwt.verify(authToken, JWT_SECRET);
-        console.log("decode")
+        // console.log("decode")
 
 
         const userResult = await db.query('SELECT * FROM users WHERE user_id = ?;', [decode.id]);
@@ -344,3 +315,17 @@ export const loginUser = async (req, res) => {
     );
 };
 
+
+
+//LOGOUT
+
+export const logout  = async (res , req) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        res.clearCookie('sessionID'); // Clear session cookie
+        res.status(200).json({ message: 'Logout successful' });
+    });
+};
