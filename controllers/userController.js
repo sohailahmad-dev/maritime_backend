@@ -174,10 +174,15 @@ export const getAllUsers = async (req, res) => {
 export const updateUser = async (req, res) => {
     const { username, email, password, role, user_age, user_gender } = req.body;
     const userId = req.params.userId;
+    console.log("USR " + userId)
 
     try {
+        console.log("In update user, Error occuring here")
         const authToken = req.headers.authorization.split(' ')[1];
+        console.log("authToken", authToken)
         const decode = jwt.verify(authToken, JWT_SECRET);
+        console.log("decode", decode)
+
 
         const userResult = await db.query('SELECT * FROM users WHERE user_id = ?;', [decode.id]);
 

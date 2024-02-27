@@ -7,7 +7,7 @@
 // export const authenticateJwt = (req, res, next) => {
 //     // console.log(req)
 //     const token = req.header('x-auth-token');
-   
+
 
 //     if (!token) {
 //         return res.status(401).json({ msg: 'No authorization token was found' });
@@ -23,24 +23,28 @@
 // };
 
 
-export const authenticateJwt = async (req , res , next) => {
+export const authenticateJwt = async (req, res, next) => {
 
-    try{
+    try {
 
-        if(
-            !req.headers.authentication || 
+        if (
+            !req.headers.authentication ||
             // !req.headers.authentication.startsWith('Bearer') || 
             !req.headers.authentication.split(' ')[1]
 
-        ){
+        ) {
             return res.status(200).json({
-                message : "Please provide token"
+                message: "Please provide token"
             })
         }
+        // else {
+        //     let token = req.headers.authentication.split(' ')[1];
+        //     console.log('Toke is : ', token)
+        // }
 
         next();
     }
-    catch(error) {
+    catch (error) {
         console.log(error.meesage)
     }
 };
