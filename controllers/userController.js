@@ -36,7 +36,7 @@ export const createUser = async (req, res) => {
             }
 
             if (emailExists) {
-                return res.status(409).send({ msg: 'This email is already in use!' });
+                return res.status(409).send({ success: false, msg: 'This email is already in use!' });
             }
 
             // Proceed with user registration
@@ -48,13 +48,14 @@ export const createUser = async (req, res) => {
                         console.error("Error:", error);
                         return res.status(500).send({ msg: 'Internal Server Error' });
                     }
-                    return res.status(201).send({ msg: 'The user has been registered with us!' });
+                    return res.status(201).send({ success: true, msg: 'The user has been registered with us!' });
                 }
             );
         });
-    }  catch (error) {
+    } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') { // Check if the error is due to duplicate entry
             return res.status(409).send({
+                success: false,
                 msg: 'This email is already in use!'
             });
         } else {
@@ -68,14 +69,14 @@ export const createUser = async (req, res) => {
 
 const checkEmailExists = (email, callback) => {
     db.query('SELECT * FROM users WHERE email = ?', [email], (err, results) => {
-      if (err) {
-        console.error(err);
-        return callback(err, null);
-      }
-  
-      callback(null, results.length > 0);
+        if (err) {
+            console.error(err);
+            return callback(err, null);
+        }
+
+        callback(null, results.length > 0);
     });
-  };
+};
 
 
 
@@ -319,7 +320,7 @@ export const loginUser = async (req, res) => {
 
 //LOGOUT
 
-export const logout  = async (res , req) => {
+export const logout = async (res, req) => {
     req.session.destroy((err) => {
         if (err) {
             console.error(err);
