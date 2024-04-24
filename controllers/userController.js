@@ -1,7 +1,7 @@
 import { validationResult, body } from "express-validator";
 import bcrypt from 'bcryptjs';
 import { db } from "../config/dbConnection.js";
-import { authenticateJwt } from "../middleware/authMiddleware.js";
+// import { authenticateJwt } from "../middleware/authMiddleware.js";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -48,7 +48,9 @@ export const createUser = async (req, res) => {
                         console.error("Error:", error);
                         return res.status(500).send({ msg: 'Internal Server Error' });
                     }
-                    return res.status(201).send({ success: true, msg: 'The user has been registered with us!' });
+                    return res.status(201).send({ 
+                        success: true,
+                        msg: 'The user has been registered with us!' });
                 }
             );
         });

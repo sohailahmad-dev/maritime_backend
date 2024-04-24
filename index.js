@@ -6,6 +6,12 @@ import dotenv from 'dotenv';
 import userRoute from './routers/userRoute.js';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
+import courseRouter from './routers/courseRoute.js';
+import adminRouter from './routers/adminRoute.js';
+import jobSeekerRouter from './routers/jobseekerRoute.js';
+import employerRouter from './routers/employerRoutes.js';
+import studentRouter from './routers/studentRoute.js';
+
 
 dotenv.config();
 
@@ -29,7 +35,7 @@ app.use(
 
 
 
-app.use('/api', userRoute);
+app.use('/api', userRoute , courseRouter , adminRouter , jobSeekerRouter , employerRouter , studentRouter);
 
 
 app.use((err, req, res, next) => {
