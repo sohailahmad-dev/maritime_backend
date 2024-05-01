@@ -1,4 +1,4 @@
-import { validationResult, body } from "express-validator";
+import { validationResult, body, param } from "express-validator";
 import bcrypt from 'bcryptjs';
 import { db } from "../config/dbConnection.js";
 // import { authenticateJwt } from "../middleware/authMiddleware.js";
@@ -7,78 +7,103 @@ import jwt from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // CREATE USER
+
 export const createUser = async (req, res) => {
-    const validationRules = [
-        body('username').notEmpty().withMessage('Username is required'),
-        body('email').isEmail().withMessage('Invalid email format'),
-        body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-        // ... add more rules as needed
-    ];
-
-    // Apply validation rules
-    await Promise.all(validationRules.map(validation => validation.run(req)));
-
-    // Use validationResult middleware
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { username, email, password, role, user_age, user_gender } = req.body;
+    const { userId, username, email, password, role, user_age, user_gender } = req.body;
 
     try {
         // Check if email already exists
-        checkEmailExists(email, (err, emailExists) => {
-            if (err) {
-                console.error(err);
-                return res.status(500).send({ msg: 'Internal Server Error' });
-            }
+        const emailExists = await checkEmailExists(email);
+        if (emailExists) {
+            return res.status(409).send({ success: false, msg: 'This email is already in use!' });
+        }
 
-            if (emailExists) {
-                return res.status(409).send({ success: false, msg: 'This email is already in use!' });
-            }
+        // Start a database transaction
+        await db.beginTransaction();
 
-            // Proceed with user registration
-            db.query(
-                'INSERT INTO users (username, email, password, role, user_age, user_gender) VALUES (?, ?, ?, ?, ?, ?);',
-                [username, email, password, role, user_age, user_gender],
-                (error, results) => {
-                    if (error) {
-                        console.error("Error:", error);
-                        return res.status(500).send({ msg: 'Internal Server Error' });
-                    }
-                    return res.status(201).send({ 
-                        success: true,
-                        msg: 'The user has been registered with us!' });
-                }
-            );
+        // Insert user data into the users table
+        const userInsertQuery = 'INSERT INTO users (user_id, username, email, password, role, user_age, user_gender) VALUES (?, ?, ?, ?, ?, ?, ?)';
+        const userInsertParams = [userId, username, email, password, role, user_age, user_gender];
+        await db.query(userInsertQuery, userInsertParams);
+
+        // Insert username and password into the respective role-specific table
+        switch (role) {
+            case 'admin':
+                await insertAdmin(userId, username, password);
+                break;
+            case 'student':
+                await insertStudent(userId, username, password);
+                break;
+            case 'employer':
+                await insertEmployer(userId, username, password);
+                break;
+            case 'jobseeker':
+                await insertJobseeker(userId, username, password);
+                break;
+            default:
+                // Handle unsupported role
+                await db.rollback(); // Rollback the transaction
+                return res.status(400).send({ success: false, msg: 'Unsupported role' });
+        }
+
+        // Commit the transaction
+        await db.commit();
+
+        // Return success response
+        return res.status(201).send({ 
+            success: true,
+            msg: 'User and entity created successfully',
+            user: { id: userId, username, email, role }
         });
     } catch (error) {
-        if (error.code === 'ER_DUP_ENTRY') { // Check if the error is due to duplicate entry
-            return res.status(409).send({
-                success: false,
-                msg: 'This email is already in use!'
-            });
-        } else {
-            console.error("Error:", error);
-            return res.status(500).send({
-                msg: "Internal Server Error"
-            });
-        }
+        // Rollback the transaction if an error occurs
+        await db.rollback();
+
+        console.error('Error inserting data:', error);
+        return res.status(500).send({ success: false, msg: 'Internal Server Error' });
     }
 };
 
-const checkEmailExists = (email, callback) => {
-    db.query('SELECT * FROM users WHERE email = ?', [email], (err, results) => {
-        if (err) {
-            console.error(err);
-            return callback(err, null);
-        }
-
-        callback(null, results.length > 0);
-    });
+// Function to insert admin data into the admins table
+const insertAdmin = async (userId, username, password) => {
+    const adminInsertQuery = 'INSERT INTO admins (user_id, username, password) VALUES (?, ?, ?)';
+    await db.query(adminInsertQuery, [userId, username, password]);
 };
+
+// Function to insert student data into the students table
+const insertStudent = async (userId, username, password) => {
+    const studentInsertQuery = 'INSERT INTO students (user_id, username, password) VALUES (?, ?, ?)';
+    await db.query(studentInsertQuery, [userId, username, password]);
+};
+
+// Function to insert employer data into the employers table
+const insertEmployer = async (userId, username, password) => {
+    const employerInsertQuery = 'INSERT INTO employers (user_id, username, password) VALUES (?, ?, ?)';
+    await db.query(employerInsertQuery, [userId, username, password]);
+};
+
+// Function to insert jobseeker data into the jobseekers table
+const insertJobseeker = async (userId, username, password) => {
+    const jobseekerInsertQuery = 'INSERT INTO jobseekers (user_id, username, password) VALUES (?, ?, ?)';
+    await db.query(jobseekerInsertQuery, [userId, username, password]);
+};
+
+
+
+const checkEmailExists = async (email) => {
+
+    try {
+        // console.log("........................")
+
+        const rows = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+        // console.log("........................")
+        return rows.length > 0;
+    } catch (error) {
+        console.error('Error:', error);
+        throw error;
+    }
+};
+
 
 
 
@@ -148,51 +173,9 @@ export const getAllUsers = async (req, res) => {
 export const updateUser = async (req, res) => {
     const { username, email, password, role, user_age, user_gender } = req.body;
     const userId = req.params.userId;
-    // console.log("USR " + userId)
 
     try {
-        // console.log("In update user, Error occuring here");
-
-        const authToken = req.headers.authentication.split(' ')[1];
-        // console.log("authToken", authToken)
-        const decode = jwt.verify(authToken, JWT_SECRET);
-        // console.log("decode")
-
-
-        const userResult = await db.query('SELECT * FROM users WHERE user_id = ?;', [decode.id]);
-
-        if (!userResult || userResult.length === 0) {
-            return res.status(404).send({
-                msg: 'User not found!'
-            });
-        }
-
-        // const hashedPassword = await bcrypt.hash(password, 10);
-
-        const updateUserQuery = `
-            UPDATE users
-            SET username = ?, email = ?, password = ?, role = ?, user_age = ?, user_gender = ?
-            WHERE user_id = ?;
-        `;
-
-        await db.query(updateUserQuery, [username, email, password, role, user_age, user_gender, userId]);
-
-        return res.status(200).send({
-            success: true,
-            msg: "User profile updated successfully!"
-        });
-    } catch (error) {
-        return res.status(500).send({
-            msg: "Internal Server Error"
-        });
-    }
-};
-
-// DELETE USER
-export const deleteUser = async (req, res) => {
-    const userId = req.params.userId;
-
-    try {
+        // Check if the user exists in the users table
         const userResult = await db.query('SELECT * FROM users WHERE user_id = ?;', [userId]);
 
         if (!userResult || userResult.length === 0) {
@@ -201,19 +184,146 @@ export const deleteUser = async (req, res) => {
             });
         }
 
+        // Start a database transaction
+        await db.beginTransaction();
+
+        // Update the user profile in the users table
+        const updateUserQuery = `
+            UPDATE users
+            SET username = ?, email = ?, password = ?, role = ?, user_age = ?, user_gender = ?
+            WHERE user_id = ?;
+        `;
+        await db.query(updateUserQuery, [username, email, password, role, user_age, user_gender, userId]);
+
+        // Update the user profile in the corresponding role table
+        switch (role) {
+            case 'admin':
+                await updateAdmin(userId, username, password);
+                break;
+            case 'student':
+                await updateStudent(userId, username, password);
+                break;
+            case 'employer':
+                await updateEmployer(userId, username, password);
+                break;
+            case 'jobseeker':
+                await updateJobseeker(userId, username, password);
+                break;
+            // Add cases for other roles...
+            default:
+                // Handle unsupported role
+                break;
+        }
+
+        // Commit the transaction
+        await db.commit();
+
+        return res.status(200).send({
+            success: true,
+            msg: "User profile updated successfully!"
+        });
+    } catch (error) {
+        // Rollback the transaction if an error occurs
+        await db.rollback();
+
+        return res.status(500).send({
+            msg: "Internal Server Error"
+        });
+    }
+};
+
+// Function to update user profile in the admin table
+const updateAdmin = async (userId, username, password) => {
+    const updateAdminQuery = `
+        UPDATE admins
+        SET username = ?, password = ?
+        WHERE user_id = ?;
+    `;
+    await db.query(updateAdminQuery, [username, password, userId]);
+};
+
+// Function to update user profile in the student table
+const updateStudent = async (userId, username, password) => {
+    const updateStudentQuery = `
+        UPDATE students
+        SET username = ?, password = ?
+        WHERE user_id = ?;
+    `;
+    await db.query(updateStudentQuery, [username, password, userId]);
+};
+
+// Function to update user profile in the employer table
+const updateEmployer = async (userId, username, password) => {
+    const updateEmployerQuery = `
+        UPDATE employers
+        SET username = ?, password = ?
+        WHERE user_id = ?;
+    `;
+    await db.query(updateEmployerQuery, [username, password, userId]);
+};
+
+// Function to update user profile in the jobseeker table
+const updateJobseeker = async (userId, username, password) => {
+    const updateJobseekerQuery = `
+        UPDATE jobseekers
+        SET username = ?, password = ?
+        WHERE user_id = ?;
+    `;
+    await db.query(updateJobseekerQuery, [username, password, userId]);
+};
+
+// DELETE USER
+export const deleteUser = async (req, res) => {
+    const userId = req.params.userId;
+
+    try {
+        // Check if the user exists
+        const userResult = await db.query('SELECT * FROM users WHERE user_id = ?;', [userId]);
+
+        if (!userResult || userResult.length === 0) {
+            return res.status(404).send({
+                msg: 'User not found!'
+            });
+        }
+
+        // Start a database transaction
+        await db.beginTransaction();
+
+        // Delete the user from the users table
         const deleteUserQuery = 'DELETE FROM users WHERE user_id = ?;';
         await db.query(deleteUserQuery, [userId]);
+
+        // Delete user records from role tables
+        const deleteRoleQueries = [
+            'DELETE FROM admins WHERE user_id = ?;',
+            'DELETE FROM students WHERE user_id = ?;',
+            'DELETE FROM employers WHERE user_id = ?;',
+            'DELETE FROM jobseekers WHERE user_id = ?;'
+            // Add more role tables as needed
+        ];
+
+        // Execute delete queries for each role table
+        for (const deleteQuery of deleteRoleQueries) {
+            await db.query(deleteQuery, [userId]);
+        }
+
+        // Commit the transaction
+        await db.commit();
 
         return res.status(200).send({
             success: true,
             msg: "User deleted successfully!"
         });
     } catch (error) {
+        // Rollback the transaction if an error occurs
+        await db.rollback();
+
         return res.status(500).send({
             msg: "Internal Server Error"
         });
     }
 };
+
 
 
 

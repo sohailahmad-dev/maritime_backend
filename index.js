@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { application } from 'express'
 import cors from 'cors'
 import bodyParser from 'body-parser';
 import  './config/dbConnection.js';
@@ -11,6 +11,8 @@ import adminRouter from './routers/adminRoute.js';
 import jobSeekerRouter from './routers/jobseekerRoute.js';
 import employerRouter from './routers/employerRoutes.js';
 import studentRouter from './routers/studentRoute.js';
+import jobRouter from './routers/jobRoute.js';
+import applicationRouter from './routers/applicationRoutes.js';
 
 
 dotenv.config();
@@ -35,7 +37,7 @@ app.use(
 
 
 
-app.use('/api', userRoute , courseRouter , adminRouter , jobSeekerRouter , employerRouter , studentRouter);
+app.use('/api', userRoute , courseRouter , adminRouter , jobSeekerRouter , employerRouter , studentRouter , jobRouter , applicationRouter);
 
 
 app.use((err, req, res, next) => {
