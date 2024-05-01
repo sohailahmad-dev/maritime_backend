@@ -29,16 +29,16 @@ export const createUser = async (req, res) => {
         // Insert username and password into the respective role-specific table
         switch (role) {
             case 'admin':
-                await insertAdmin(userId, username, password);
+                await insertAdmin(userId, username, password , email);
                 break;
             case 'student':
-                await insertStudent(userId, username, password);
+                await insertStudent(userId, username, password, email);
                 break;
             case 'employer':
-                await insertEmployer(userId, username, password);
+                await insertEmployer(userId, username, password, email);
                 break;
             case 'jobseeker':
-                await insertJobseeker(userId, username, password);
+                await insertJobseeker(userId, username, password, email);
                 break;
             default:
                 // Handle unsupported role
@@ -65,27 +65,27 @@ export const createUser = async (req, res) => {
 };
 
 // Function to insert admin data into the admins table
-const insertAdmin = async (userId, username, password) => {
-    const adminInsertQuery = 'INSERT INTO admins (user_id, username, password) VALUES (?, ?, ?)';
-    await db.query(adminInsertQuery, [userId, username, password]);
+const insertAdmin = async (userId, username, password , email) => {
+    const adminInsertQuery = 'INSERT INTO admins (user_id, username, password , email) VALUES (?, ?, ? ,?)';
+    await db.query(adminInsertQuery, [userId, username, password , email]);
 };
 
 // Function to insert student data into the students table
-const insertStudent = async (userId, username, password) => {
-    const studentInsertQuery = 'INSERT INTO students (user_id, username, password) VALUES (?, ?, ?)';
-    await db.query(studentInsertQuery, [userId, username, password]);
+const insertStudent = async (userId, username, password, email) => {
+    const studentInsertQuery = 'INSERT INTO students (user_id, username, password, email) VALUES (?, ?, ?, ?)';
+    await db.query(studentInsertQuery, [userId, username, password, email]);
 };
 
 // Function to insert employer data into the employers table
-const insertEmployer = async (userId, username, password) => {
-    const employerInsertQuery = 'INSERT INTO employers (user_id, username, password) VALUES (?, ?, ?)';
-    await db.query(employerInsertQuery, [userId, username, password]);
+const insertEmployer = async (userId, username, password, email) => {
+    const employerInsertQuery = 'INSERT INTO employers (user_id, username, password, email) VALUES (?, ?, ?, ?)';
+    await db.query(employerInsertQuery, [userId, username, password, email]);
 };
 
 // Function to insert jobseeker data into the jobseekers table
-const insertJobseeker = async (userId, username, password) => {
-    const jobseekerInsertQuery = 'INSERT INTO jobseekers (user_id, username, password) VALUES (?, ?, ?)';
-    await db.query(jobseekerInsertQuery, [userId, username, password]);
+const insertJobseeker = async (userId, username, password, email) => {
+    const jobseekerInsertQuery = 'INSERT INTO jobseekers (user_id, username, password, email) VALUES (?, ?, ?, ?)';
+    await db.query(jobseekerInsertQuery, [userId, username, password, email]);
 };
 
 
@@ -140,24 +140,6 @@ export const getAllUsers = async (req, res) => {
             })
         });
 
-
-
-        // if (!result || result.length === 0) {
-        //     return res.status(404).send({
-        //         msg: 'No users found!'
-        //     });
-        // }
-
-        // // Extracting only the required properties from each user
-        // const filteredUsers = result.map(user => {
-        //     const { username, email, password, user_age, user_gender, role } = user;
-        //     return { username, email, password, user_age, user_gender, role };
-        // });
-
-        // return res.status(200).json({
-        //     users: filteredUsers,
-        //     msg: 'All users retrieved successfully!'
-        // });
     } catch (error) {
         console.error(error);
         return res.status(500).send({
@@ -198,16 +180,16 @@ export const updateUser = async (req, res) => {
         // Update the user profile in the corresponding role table
         switch (role) {
             case 'admin':
-                await updateAdmin(userId, username, password);
+                await updateAdmin(userId, username, password ,email);
                 break;
             case 'student':
-                await updateStudent(userId, username, password);
+                await updateStudent(userId, username, password, email);
                 break;
             case 'employer':
-                await updateEmployer(userId, username, password);
+                await updateEmployer(userId, username, password, email);
                 break;
             case 'jobseeker':
-                await updateJobseeker(userId, username, password);
+                await updateJobseeker(userId, username, password, email);
                 break;
             // Add cases for other roles...
             default:
@@ -233,43 +215,43 @@ export const updateUser = async (req, res) => {
 };
 
 // Function to update user profile in the admin table
-const updateAdmin = async (userId, username, password) => {
+const updateAdmin = async (userId, username, password, email) => {
     const updateAdminQuery = `
         UPDATE admins
-        SET username = ?, password = ?
+        SET username = ?, password = ? , email= ?
         WHERE user_id = ?;
     `;
-    await db.query(updateAdminQuery, [username, password, userId]);
+    await db.query(updateAdminQuery, [username, password, userId , email]);
 };
 
 // Function to update user profile in the student table
-const updateStudent = async (userId, username, password) => {
+const updateStudent = async (userId, username, password, email) => {
     const updateStudentQuery = `
         UPDATE students
-        SET username = ?, password = ?
+        SET username = ?, password = ? , email= ?
         WHERE user_id = ?;
     `;
-    await db.query(updateStudentQuery, [username, password, userId]);
+    await db.query(updateStudentQuery, [username, password, userId, email]);
 };
 
 // Function to update user profile in the employer table
-const updateEmployer = async (userId, username, password) => {
+const updateEmployer = async (userId, username, password, email) => {
     const updateEmployerQuery = `
         UPDATE employers
-        SET username = ?, password = ?
+        SET username = ?, password = ? , email= ?
         WHERE user_id = ?;
     `;
-    await db.query(updateEmployerQuery, [username, password, userId]);
+    await db.query(updateEmployerQuery, [username, password, userId, email]);
 };
 
 // Function to update user profile in the jobseeker table
-const updateJobseeker = async (userId, username, password) => {
+const updateJobseeker = async (userId, username, password, email) => {
     const updateJobseekerQuery = `
         UPDATE jobseekers
-        SET username = ?, password = ?
+        SET username = ?, password = ? , email= ?
         WHERE user_id = ?;
     `;
-    await db.query(updateJobseekerQuery, [username, password, userId]);
+    await db.query(updateJobseekerQuery, [username, password, userId, email]);
 };
 
 // DELETE USER
