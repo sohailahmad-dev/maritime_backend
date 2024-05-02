@@ -27,27 +27,75 @@ export const createAdmin = (req, res) => {
 // Update admin by ID
 export const updateAdmin = (req, res) => {
     const adminId = req.params.id;
-    const { user_id, first_name, last_name, contact_number, email, role_description } = req.body;
+    const { user_id, username, password, first_name, last_name, contact_number, email, role_description } = req.body;
 
-    const sql = `UPDATE admins SET user_id = ?, first_name = ?, last_name = ?, contact_number = ?, email = ?, role_description = ? WHERE admin_id = ?`;
-    const values = [user_id, first_name, last_name, contact_number, email, role_description, adminId];
+    // Update admin table
+    const adminUpdateSql = `UPDATE admins SET user_id = ?, username = ?, password = ?, first_name = ?, last_name = ?, contact_number = ?, email = ?, role_description = ? WHERE admin_id = ?`;
+    const adminUpdateValues = [user_id, username, password, first_name, last_name, contact_number, email, role_description, adminId];
 
-    db.query(sql, values, (err, result) => {
+    // Update user table
+    const userUpdateSql = `UPDATE users SET username = ?, password = ?,  email = ? WHERE user_id = ?`;
+    const userUpdateValues = [username, password, email, user_id];
+
+    db.beginTransaction((err) => {
         if (err) {
-            console.error('Error executing SQL:', err);
-            res.status(500).json({
+            console.error('Error beginning transaction:', err);
+            return res.status(500).json({
                 success: false,
                 error: 'Error updating admin'
             });
-            return;
         }
-        console.log('Admin updated successfully');
-        res.json({
-            success: true,
-            message: 'Admin updated successfully'
+
+        // Update admin table
+        db.query(adminUpdateSql, adminUpdateValues, (adminErr) => {
+            if (adminErr) {
+                db.rollback(() => {
+                    console.error('Error updating admin:', adminErr);
+                    res.status(500).json({
+                        success: false,
+                        error: 'Error updating admin'
+                    });
+                });
+                return;
+            }
+
+            // Update user table
+            db.query(userUpdateSql, userUpdateValues, (userErr) => {
+                if (userErr) {
+                    db.rollback(() => {
+                        console.error('Error updating user:', userErr);
+                        res.status(500).json({
+                            success: false,
+                            error: 'Error updating user'
+                        });
+                    });
+                    return;
+                }
+
+                // Commit transaction if both updates are successful
+                db.commit((commitErr) => {
+                    if (commitErr) {
+                        db.rollback(() => {
+                            console.error('Error committing transaction:', commitErr);
+                            res.status(500).json({
+                                success: false,
+                                error: 'Error updating admin'
+                            });
+                        });
+                        return;
+                    }
+
+                    console.log('Admin updated successfully');
+                    res.json({
+                        success: true,
+                        message: 'Admin updated successfully'
+                    });
+                });
+            });
         });
     });
 };
+
 
 // Delete admin by ID
 export const deleteAdmin = (req, res) => {

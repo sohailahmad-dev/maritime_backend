@@ -27,27 +27,75 @@ export const createJobSeeker = (req, res) => {
 // Update job seeker by ID
 export const updateJobSeeker = (req, res) => {
     const jobSeekerId = req.params.id;
-    const { user_id, resumeURL, skills, workExperience, education, certifications, languages } = req.body;
+    const { user_id,username, email, password, resumeURL, skills, workExperience, education, certifications, languages } = req.body;
 
-    const sql = `UPDATE jobseekers SET user_id = ?, resumeURL = ?, skills = ?, workExperience = ?, education = ?, certifications = ?, languages = ? WHERE jobSeeker_id = ?`;
-    const values = [user_id, resumeURL, skills, workExperience, education, certifications, languages, jobSeekerId];
+    // Update jobseekers table
+    const jobSeekerUpdateSql = `UPDATE jobseekers SET user_id = ?, username = ?, email = ?, password = ?, resumeURL = ?, skills = ?, workExperience = ?, education = ?, certifications = ?, languages = ? WHERE jobSeeker_id = ?`;
+    const jobSeekerUpdateValues = [user_id,username, email, password, resumeURL, skills, workExperience, education, certifications, languages, jobSeekerId];
 
-    db.query(sql, values, (err, result) => {
+    // Update user table
+    const userUpdateSql = `UPDATE users SET username = ?, email = ?, password = ? WHERE user_id = ?`;
+    const userUpdateValues = [username, email, password, user_id];
+
+    db.beginTransaction((err) => {
         if (err) {
-            console.error('Error executing SQL:', err);
-            res.status(500).json({
+            console.error('Error beginning transaction:', err);
+            return res.status(500).json({
                 success: false,
                 error: 'Error updating job seeker'
             });
-            return;
         }
-        console.log('Job seeker updated successfully');
-        res.json({
-            success: true,
-            message: 'Job seeker updated successfully'
+
+        // Update jobseekers table
+        db.query(jobSeekerUpdateSql, jobSeekerUpdateValues, (jobSeekerErr) => {
+            if (jobSeekerErr) {
+                db.rollback(() => {
+                    console.error('Error updating job seeker:', jobSeekerErr);
+                    res.status(500).json({
+                        success: false,
+                        error: 'Error updating job seeker'
+                    });
+                });
+                return;
+            }
+
+            // Update user table
+            db.query(userUpdateSql, userUpdateValues, (userErr) => {
+                if (userErr) {
+                    db.rollback(() => {
+                        console.error('Error updating user:', userErr);
+                        res.status(500).json({
+                            success: false,
+                            error: 'Error updating user'
+                        });
+                    });
+                    return;
+                }
+
+                // Commit transaction if both updates are successful
+                db.commit((commitErr) => {
+                    if (commitErr) {
+                        db.rollback(() => {
+                            console.error('Error committing transaction:', commitErr);
+                            res.status(500).json({
+                                success: false,
+                                error: 'Error updating job seeker'
+                            });
+                        });
+                        return;
+                    }
+
+                    console.log('Job seeker updated successfully');
+                    res.json({
+                        success: true,
+                        message: 'Job seeker updated successfully'
+                    });
+                });
+            });
         });
     });
 };
+
 
 // Delete job seeker by ID
 export const deleteJobSeeker = (req, res) => {

@@ -25,23 +25,60 @@ export const createStudent = (req, res) => {
 // Update student by ID
 export const updateStudent = (req, res) => {
     const studentId = req.params.id;
-    const { user_id, studentIDNumber, first_name, last_name, email, contact_no, gender, address } = req.body;
+    const { user_id, username, email, password, studentIDNumber, first_name, last_name, contact_no, gender, address } = req.body;
 
-    const sql = `UPDATE students SET user_id = ?, studentIDNumber = ?, first_name = ?, last_name = ?, email = ?, contact_no = ?, gender = ?, address = ? WHERE std_id = ?`;
-    const values = [user_id, studentIDNumber, first_name, last_name, email, contact_no, gender, address, studentId];
-
-    db.query(sql, values, (err, result) => {
+    // Start a transaction
+    db.beginTransaction((err) => {
         if (err) {
-            console.error('Error executing SQL:', err);
-            res.status(500).json({ error: 'Error updating student' });
+            console.error('Error beginning transaction:', err);
+            res.status(500).json({ success: false, error: 'Error updating student' });
             return;
         }
-        console.log('Student updated successfully');
-        res.json({ 
-            success : true,
-            message: 'Student updated successfully' });
+
+        // Update student table
+        const studentSql = `UPDATE students SET user_id = ?, username = ?, email = ?, password = ?, studentIDNumber = ?, first_name = ?, last_name = ?, contact_no = ?, gender = ?, address = ? WHERE std_id = ?`;
+        const studentValues = [user_id, username, email, password, studentIDNumber, first_name, last_name, contact_no, gender, address, studentId];
+
+        db.query(studentSql, studentValues, (studentErr, studentResult) => {
+            if (studentErr) {
+                console.error('Error updating student:', studentErr);
+                db.rollback(() => {
+                    res.status(500).json({ success: false, error: 'Error updating student' });
+                });
+                return;
+            }
+
+            // Update user table
+            const userSql = `UPDATE users SET username = ?, email = ?, password = ? WHERE user_id = ?`;
+            const userValues = [username, email, password, user_id];
+
+            db.query(userSql, userValues, (userErr, userResult) => {
+                if (userErr) {
+                    console.error('Error updating user:', userErr);
+                    db.rollback(() => {
+                        res.status(500).json({ success: false, error: 'Error updating user' });
+                    });
+                    return;
+                }
+
+                // Commit the transaction
+                db.commit((commitErr) => {
+                    if (commitErr) {
+                        console.error('Error committing transaction:', commitErr);
+                        db.rollback(() => {
+                            res.status(500).json({ success: false, error: 'Error updating student' });
+                        });
+                        return;
+                    }
+
+                    console.log('Student updated successfully');
+                    res.json({ success: true, message: 'Student updated successfully' });
+                });
+            });
+        });
     });
 };
+
 
 // Delete student by ID
 export const deleteStudent = (req, res) => {

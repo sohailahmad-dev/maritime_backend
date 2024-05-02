@@ -26,23 +26,72 @@ export const createEmployer = (req, res) => {
 // Update employer by ID
 export const updateEmployer = (req, res) => {
     const employerId = req.params.id;
-    const { user_id, company_name, contact_email, contact_number, company_website, company_size, location, description } = req.body;
+    const { user_id, username, email, password, company_name, contact_email, contact_number, company_website, company_size, location, description } = req.body;
 
-    const sql = `UPDATE employers SET user_id = ?, company_name = ?, contact_email = ?, contact_number = ?, company_website = ?, company_size = ?, location = ?, description = ? WHERE employer_id = ?`;
-    const values = [user_id, company_name, contact_email, contact_number, company_website, company_size, location, description, employerId];
+    // Update employer table
+    const employerUpdateSql = `UPDATE employers SET user_id = ?, username = ?, email = ?, password = ?, company_name = ?, contact_email = ?, contact_number = ?, company_website = ?, company_size = ?, location = ?, description = ? WHERE employer_id = ?`;
+    const employerUpdateValues = [user_id, username, email, password, company_name, contact_email, contact_number, company_website, company_size, location, description, employerId];
 
-    db.query(sql, values, (err, result) => {
+    // Update user table
+    const userUpdateSql = `UPDATE users SET username = ?, email = ?, password = ? WHERE user_id = ?`;
+    const userUpdateValues = [username, email, password, user_id];
+
+    db.beginTransaction((err) => {
         if (err) {
-            console.error('Error executing SQL:', err);
-            res.status(500).json({ 
+            console.error('Error beginning transaction:', err);
+            return res.status(500).json({
                 success: false,
-                error: 'Error updating employer' });
-            return;
+                error: 'Error updating employer'
+            });
         }
-        console.log('Employer updated successfully');
-        res.json({ 
-            success : true,
-            message: 'Employer updated successfully' });
+
+        // Update employer table
+        db.query(employerUpdateSql, employerUpdateValues, (employerErr) => {
+            if (employerErr) {
+                db.rollback(() => {
+                    console.error('Error updating employer:', employerErr);
+                    res.status(500).json({
+                        success: false,
+                        error: 'Error updating employer'
+                    });
+                });
+                return;
+            }
+
+            // Update user table
+            db.query(userUpdateSql, userUpdateValues, (userErr) => {
+                if (userErr) {
+                    db.rollback(() => {
+                        console.error('Error updating user:', userErr);
+                        res.status(500).json({
+                            success: false,
+                            error: 'Error updating user'
+                        });
+                    });
+                    return;
+                }
+
+                // Commit transaction if both updates are successful
+                db.commit((commitErr) => {
+                    if (commitErr) {
+                        db.rollback(() => {
+                            console.error('Error committing transaction:', commitErr);
+                            res.status(500).json({
+                                success: false,
+                                error: 'Error updating employer'
+                            });
+                        });
+                        return;
+                    }
+
+                    console.log('Employer updated successfully');
+                    res.json({
+                        success: true,
+                        message: 'Employer updated successfully'
+                    });
+                });
+            });
+        });
     });
 };
 
