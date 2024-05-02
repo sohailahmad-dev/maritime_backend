@@ -29,15 +29,19 @@ export const createUser = async (req, res) => {
         // Insert username and password into the respective role-specific table
         switch (role) {
             case 'admin':
-                await insertAdmin(userId, username, password , email);
+            case 'Admin':
+                await insertAdmin(userId, username, password, email);
                 break;
             case 'student':
+            case 'Student':
                 await insertStudent(userId, username, password, email);
                 break;
             case 'employer':
+            case 'Employer':
                 await insertEmployer(userId, username, password, email);
                 break;
-            case 'jobseeker':
+            case 'job seeker':
+            case 'Job Seeker':
                 await insertJobseeker(userId, username, password, email);
                 break;
             default:
@@ -50,7 +54,7 @@ export const createUser = async (req, res) => {
         await db.commit();
 
         // Return success response
-        return res.status(201).send({ 
+        return res.status(201).send({
             success: true,
             msg: 'User and entity created successfully',
             user: { id: userId, username, email, role }
@@ -65,9 +69,9 @@ export const createUser = async (req, res) => {
 };
 
 // Function to insert admin data into the admins table
-const insertAdmin = async (userId, username, password , email) => {
+const insertAdmin = async (userId, username, password, email) => {
     const adminInsertQuery = 'INSERT INTO admins (user_id, username, password , email) VALUES (?, ?, ? ,?)';
-    await db.query(adminInsertQuery, [userId, username, password , email]);
+    await db.query(adminInsertQuery, [userId, username, password, email]);
 };
 
 // Function to insert student data into the students table
@@ -180,7 +184,7 @@ export const updateUser = async (req, res) => {
         // Update the user profile in the corresponding role table
         switch (role) {
             case 'admin':
-                await updateAdmin(userId, username, password ,email);
+                await updateAdmin(userId, username, password, email);
                 break;
             case 'student':
                 await updateStudent(userId, username, password, email);
@@ -221,7 +225,7 @@ const updateAdmin = async (userId, username, password, email) => {
         SET username = ?, password = ? , email= ?
         WHERE user_id = ?;
     `;
-    await db.query(updateAdminQuery, [username, password, userId , email]);
+    await db.query(updateAdminQuery, [username, password, userId, email]);
 };
 
 // Function to update user profile in the student table
