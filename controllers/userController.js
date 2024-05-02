@@ -27,21 +27,17 @@ export const createUser = async (req, res) => {
         await db.query(userInsertQuery, userInsertParams);
 
         // Insert username and password into the respective role-specific table
-        switch (role) {
+        switch (role.toLowerCase()) {
             case 'admin':
-            case 'Admin':
                 await insertAdmin(userId, username, password, email);
                 break;
             case 'student':
-            case 'Student':
                 await insertStudent(userId, username, password, email);
                 break;
             case 'employer':
-            case 'Employer':
                 await insertEmployer(userId, username, password, email);
                 break;
             case 'job seeker':
-            case 'Job Seeker':
                 await insertJobseeker(userId, username, password, email);
                 break;
             default:
@@ -70,7 +66,7 @@ export const createUser = async (req, res) => {
 
 // Function to insert admin data into the admins table
 const insertAdmin = async (userId, username, password, email) => {
-    const adminInsertQuery = 'INSERT INTO admins (user_id, username, password , email) VALUES (?, ?, ? ,?)';
+    const adminInsertQuery = 'INSERT INTO admins (user_id, username, password, email) VALUES (?, ?, ?, ?)';
     await db.query(adminInsertQuery, [userId, username, password, email]);
 };
 
@@ -91,7 +87,6 @@ const insertJobseeker = async (userId, username, password, email) => {
     const jobseekerInsertQuery = 'INSERT INTO jobseekers (user_id, username, password, email) VALUES (?, ?, ?, ?)';
     await db.query(jobseekerInsertQuery, [userId, username, password, email]);
 };
-
 
 
 const checkEmailExists = async (email) => {
@@ -182,7 +177,7 @@ export const updateUser = async (req, res) => {
         await db.query(updateUserQuery, [username, email, password, role, user_age, user_gender, userId]);
 
         // Update the user profile in the corresponding role table
-        switch (role) {
+        switch (role.toLowerCase()) {
             case 'admin':
                 await updateAdmin(userId, username, password, email);
                 break;
@@ -192,7 +187,7 @@ export const updateUser = async (req, res) => {
             case 'employer':
                 await updateEmployer(userId, username, password, email);
                 break;
-            case 'jobseeker':
+            case 'job seeker':
                 await updateJobseeker(userId, username, password, email);
                 break;
             // Add cases for other roles...
@@ -225,7 +220,7 @@ const updateAdmin = async (userId, username, password, email) => {
         SET username = ?, password = ? , email= ?
         WHERE user_id = ?;
     `;
-    await db.query(updateAdminQuery, [username, password, userId, email]);
+    await db.query(updateAdminQuery, [username, password, email, userId]);
 };
 
 // Function to update user profile in the student table
@@ -235,7 +230,7 @@ const updateStudent = async (userId, username, password, email) => {
         SET username = ?, password = ? , email= ?
         WHERE user_id = ?;
     `;
-    await db.query(updateStudentQuery, [username, password, userId, email]);
+    await db.query(updateStudentQuery, [username, password, email, userId]);
 };
 
 // Function to update user profile in the employer table
@@ -245,7 +240,7 @@ const updateEmployer = async (userId, username, password, email) => {
         SET username = ?, password = ? , email= ?
         WHERE user_id = ?;
     `;
-    await db.query(updateEmployerQuery, [username, password, userId, email]);
+    await db.query(updateEmployerQuery, [username, password, email, userId]);
 };
 
 // Function to update user profile in the jobseeker table
@@ -255,7 +250,7 @@ const updateJobseeker = async (userId, username, password, email) => {
         SET username = ?, password = ? , email= ?
         WHERE user_id = ?;
     `;
-    await db.query(updateJobseekerQuery, [username, password, userId, email]);
+    await db.query(updateJobseekerQuery, [username, password, email, userId]);
 };
 
 // DELETE USER
