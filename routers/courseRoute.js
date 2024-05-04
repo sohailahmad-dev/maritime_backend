@@ -1,10 +1,9 @@
-import express from 'express';
-import multer from 'multer';
+import { Router } from 'express';
 import { createCourse } from '../controllers/courseController.js';
+import upload from '../middleware/upload.js';
 
-const courseRouter = express.Router();
-const upload = multer();
+const courseRouter = Router();
 
-courseRouter.post('/course', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'video', maxCount: 1 }]), createCourse);
+courseRouter.post('/course', upload.fields([{ name: 'image', maxCount: 1 }]), createCourse);
 
 export default courseRouter;

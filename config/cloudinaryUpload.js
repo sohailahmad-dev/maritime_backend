@@ -22,15 +22,4 @@ const uploadImage = async (filePath) => {
     }
 };
 
-const uploadVideo = async (filePath) => {
-    // try {
-    //     const result = await cloudinary.uploader.upload(filePath);
-    //     console.log('Video upload result:', result);
-    //     return result.secure_url;
-    // } catch (error) {
-    //     console.error('Error uploading video to Cloudinary:', error);
-    //     throw new Error('Error uploading video');
-    // }
-};
-
-export { uploadImage, uploadVideo };
+export { uploadImage };
