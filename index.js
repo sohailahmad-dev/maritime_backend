@@ -13,7 +13,7 @@ import employerRouter from './routers/employerRoutes.js';
 import studentRouter from './routers/studentRoute.js';
 import jobRouter from './routers/jobRoute.js';
 import applicationRouter from './routers/applicationRoutes.js';
-
+import trainingRouter from './routers/trainingRoute.js'
 
 dotenv.config();
 
@@ -37,7 +37,7 @@ app.use(
 
 
 
-app.use('/api', userRoute , courseRouter , adminRouter , jobSeekerRouter , employerRouter , studentRouter , jobRouter , applicationRouter);
+app.use('/api', userRoute , courseRouter, trainingRouter , adminRouter , jobSeekerRouter , employerRouter , studentRouter , jobRouter , applicationRouter);
 
 
 app.use((err, req, res, next) => {

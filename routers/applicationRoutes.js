@@ -3,11 +3,17 @@ import { createApplication, deleteApplication, getApplicationById, getAllApplica
 
 const applicationRouter = express.Router();
 
-// Create application
-applicationRouter.post('/create_application', createApplication);
+// Route for creating an application for a course
+applicationRouter.post('/create_application/course/:course_id/:std_id', createApplication);
 
-// Update application
-applicationRouter.put('/update_application/:id', updateApplication);
+// Route for creating an application for a program
+applicationRouter.post('/create_application/program/:program_id/:std_id', createApplication);
+
+// Update application for a course
+applicationRouter.put('/update_application/course/:id/:std_id', updateApplication);
+
+// Update application for a program
+applicationRouter.put('/update_application/program/:id/:std_id', updateApplication);
 
 // Delete application
 applicationRouter.delete('/delete_application/:id', deleteApplication);

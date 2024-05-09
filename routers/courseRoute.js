@@ -1,9 +1,22 @@
 import { Router } from 'express';
-import { createCourse } from '../controllers/courseController.js';
-import upload from '../middleware/upload.js';
+import { createCourse, deleteCourse, getAllCourses, getCourseById, updateCourse } from '../controllers/courseController.js';
+import {upload} from '../middleware/upload.js';
 
 const courseRouter = Router();
 
-courseRouter.post('/course', upload.fields([{ name: 'image', maxCount: 1 }]), createCourse);
+//craete course
+courseRouter.post('/course', upload, createCourse);
+
+// Get all courses
+courseRouter.get('/courses', getAllCourses);
+
+// Get course by ID
+courseRouter.get('/course/:id', getCourseById);
+
+// Update course by ID
+courseRouter.put('/course/:id', upload, updateCourse);
+
+// Delete course by ID
+courseRouter.delete('/course/:id', deleteCourse);
 
 export default courseRouter;

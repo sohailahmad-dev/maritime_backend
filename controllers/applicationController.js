@@ -1,11 +1,17 @@
-import {db} from '../config/dbConnection.js';
+import { db } from '../config/dbConnection.js';
 
 // Create application
 export const createApplication = (req, res) => {
-    const { app_id, std_id, course_id, program_id, AppDate, Status } = req.body;
+    const { std_id } = req.params;
+    const { course_id, program_id } = req.params;
+    const Status = 'Pending';
+    const { app_id, AppDate } = req.body;
 
-    const sql = `INSERT INTO applications (app_id, std_id, course_id, program_id, AppDate, Status) VALUES (?, ?, ?, ?, ?, ?)`;
-    const values = [app_id, std_id, course_id, program_id, AppDate, Status];
+    const sql = `
+        INSERT INTO applications (app_id, std_id, course_id, program_id, AppDate, Status) 
+        VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    const values = [app_id, std_id, course_id || null, program_id || null, AppDate, Status];
 
     db.query(sql, values, (err, result) => {
         if (err) {
@@ -15,20 +21,25 @@ export const createApplication = (req, res) => {
         }
         console.log('Data inserted successfully');
         res.status(201).json({
-            success : true,
-            data : result,
+            success: true,
             message: 'Application created successfully'
         });
     });
 };
 
-// Update application by ID
-export const updateApplication = (req, res) => {
-    const appId = req.params.id;
-    const { std_id, course_id, program_id, AppDate, Status } = req.body;
 
-    const sql = `UPDATE applications SET std_id = ?, course_id = ?, program_id = ?, AppDate = ?, Status = ? WHERE app_id = ?`;
-    const values = [std_id, course_id, program_id, AppDate, Status, appId];
+// Update application
+export const updateApplication = (req, res) => {
+    const { id, std_id } = req.params;
+    const { course_id, program_id } = req.body; // Retrieve from req.body instead of req.params
+    const { AppDate, Status } = req.body;
+
+    const sql = `
+        UPDATE applications 
+        SET std_id = ?, course_id = ?, program_id = ?, AppDate = ?, Status = ? 
+        WHERE app_id = ?
+    `;
+    const values = [std_id, course_id || null, program_id || null, AppDate, Status, id];
 
     db.query(sql, values, (err, result) => {
         if (err) {
@@ -38,10 +49,13 @@ export const updateApplication = (req, res) => {
         }
         console.log('Application updated successfully');
         res.json({ 
-            success : true,
-            message: 'Application updated successfully' });
+            success: true,
+            message: 'Application updated successfully'
+        });
     });
 };
+
+
 
 // Delete application by ID
 export const deleteApplication = (req, res) => {
