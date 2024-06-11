@@ -17,6 +17,7 @@ import trainingRouter from './routers/trainingRoute.js'
 import messageRouter from './routers/messageRoutes.js';
 import notificationRouter from './routers/notificationRoutes.js';
 import resumeRoute from './routers/resumeRoutes.js';
+import jobApplicationRouter from './routers/jobapplicationRoute.js';
 
 dotenv.config();
 
@@ -40,7 +41,7 @@ app.use(
 
 
 
-app.use('/api', userRoute , courseRouter, trainingRouter , adminRouter , jobSeekerRouter , employerRouter , studentRouter , jobRouter , applicationRouter, messageRouter, notificationRouter, resumeRoute);
+app.use('/api', userRoute , courseRouter, trainingRouter , adminRouter , jobSeekerRouter , employerRouter , studentRouter , jobRouter , applicationRouter, jobApplicationRouter, messageRouter, notificationRouter, resumeRoute);
 
 
 app.use((err, req, res, next) => {

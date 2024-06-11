@@ -2,10 +2,18 @@ import {db} from '../config/dbConnection.js';
 
 // Create job
 export const createJob = (req, res) => {
+    // console.log('Received request body:', req.body); // Log the request body
     const { job_id, job_title, job_description, requirements, location, salary, employer_id, PostingDate, ExpiryDate } = req.body;
+
+    if (!job_id || !job_title || !job_description || !requirements || !location || !salary || !employer_id || !PostingDate || !ExpiryDate) {
+        res.status(400).json({ error: 'All fields are required' });
+        return;
+    }
 
     const sql = `INSERT INTO jobs (job_id, job_title, job_description, requirements, location, salary, employer_id, PostingDate, ExpiryDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     const values = [job_id, job_title, job_description, requirements, location, salary, employer_id, PostingDate, ExpiryDate];
+
+    console.log('Executing SQL:', sql, values);
 
     db.query(sql, values, (err, result) => {
         if (err) {
@@ -15,8 +23,8 @@ export const createJob = (req, res) => {
         }
         console.log('Data inserted successfully');
         res.status(201).json({
-            success : true,
-            data : result,
+            success: true,
+            data: result,
             message: 'Job created successfully'
         });
     });
