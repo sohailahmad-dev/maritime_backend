@@ -2,17 +2,18 @@ import { db } from '../config/dbConnection.js';
 
 // CREATE COURSE 
 
+
 export const createCourse = (req, res) => {
   const { course_name, description, duration, instructor } = req.body;
-  const images = req.files; // Retrieve the array of uploaded files
+  const files = req.files;
 
-  // Check if all required fields are present
-  if (!course_name || !description || !duration || !instructor || !images) {
-    return res.status(400).json({ error: 'All fields are required' });
+  // Validate required fields
+  if (!course_name || !description || !duration || !instructor || !files || files.length === 0) {
+    return res.status(400).json({ error: 'All fields are required, including at least one image' });
   }
 
-  // Store the URLs of uploaded images
-  const imageUrls = images.map(image => image.path); // Assuming Multer stores the file paths
+  // Generate URLs for the uploaded files
+  const fileUrls = files.map(file => `${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
 
   // Construct an SQL query to insert course details and image URLs into the database
   const query = `
@@ -21,16 +22,15 @@ export const createCourse = (req, res) => {
   `;
 
   // Create an array of values for the query
-  const values = [course_name, description, duration, instructor, imageUrls.join(',')]; // Join URLs with a delimiter
+  const values = [course_name, description, duration, instructor, fileUrls.join(',')]; // Join URLs with a delimiter
 
   // Execute the query
   db.query(query, values, (error, results) => {
     if (error) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Internal Server Error'
       });
-      return;
     }
 
     res.status(201).json({
@@ -40,6 +40,7 @@ export const createCourse = (req, res) => {
     });
   });
 };
+
 
 
 

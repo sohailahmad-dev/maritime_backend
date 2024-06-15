@@ -1,12 +1,24 @@
 import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
+// Derive __dirname from import.meta.url
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Ensure the uploads directory exists
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
 
 // Define storage settings
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, uploadDir);
   },
   filename: function(req, file, cb) {
-    // Generate a unique filename including a timestamp
     const uniqueFilename = `${Date.now()}-${file.originalname}`;
     cb(null, uniqueFilename);
   }
@@ -21,12 +33,11 @@ const fileFilter = function(req, file, cb) {
   }
 };
 
-// Export the multer configuration
-
-export const upload = multer({ 
+// Multer configuration
+const upload = multer({ 
   storage: storage, 
-  limits: { fileSize: 1024 * 1024 * 5 }, // Limiting file size to 5MB
+  limits: { fileSize: 1024 * 1024 * 5 }, 
   fileFilter: fileFilter
-}).array('files', 5); // Accepting an array of files with field name 'files', limiting to 5 files
+}).array('files', 5);
 
-// export default upload;
+export default upload;

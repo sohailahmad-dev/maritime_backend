@@ -1,5 +1,5 @@
 import express from 'express';
-import { upload } from '../middleware/upload.js'; // Assuming you have middleware for file uploads
+import upload  from '../middleware/upload.js'; // Assuming you have middleware for file uploads
 import { createProgram, deleteProgram, getAllPrograms, getProgramById, updateProgram } from '../controllers/trainingController.js';
 
 const trainingRouter = express.Router();

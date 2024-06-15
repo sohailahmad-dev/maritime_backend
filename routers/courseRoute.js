@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { createCourse, deleteCourse, getAllCourses, getCourseById, updateCourse } from '../controllers/courseController.js';
-import {upload} from '../middleware/upload.js';
+import upload from '../middleware/upload.js';
+// import upload from '../middleware/upload.js';
 
 const courseRouter = Router();
 
