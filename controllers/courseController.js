@@ -1,8 +1,6 @@
 import { db } from '../config/dbConnection.js';
 
-// CREATE COURSE 
-
-
+// CREATE COURSE
 export const createCourse = (req, res) => {
   const { course_name, description, duration, instructor } = req.body;
   const files = req.files;
@@ -22,7 +20,7 @@ export const createCourse = (req, res) => {
   `;
 
   // Create an array of values for the query
-  const values = [course_name, description, duration, instructor, fileUrls.join(',')]; // Join URLs with a delimiter
+  const values = [course_name, description, duration, instructor, fileUrls.join(',')];
 
   // Execute the query
   db.query(query, values, (error, results) => {
@@ -41,39 +39,37 @@ export const createCourse = (req, res) => {
   });
 };
 
-
-
-
-// UPDATE COURSE 
-
+// UPDATE COURSE
 export const updateCourse = (req, res) => {
   const courseId = req.params.id;
   const { course_name, description, duration, instructor } = req.body;
-  const images = req.files; // Retrieve the array of uploaded files
+  const files = req.files;
 
-  // Check if all required fields are present
-  if (!course_name || !description || !duration || !instructor || !images) {
+  // Validate required fields
+  if (!course_name || !description || !duration || !instructor || !files) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
-  // Store the URLs of uploaded images
-  const imageUrls = images.map(image => image.path); // Assuming Multer stores the file paths
+  // Generate URLs for the uploaded files
+  const fileUrls = files.map(file => `${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
 
+  // Construct an SQL query to update course details and image URLs in the database
   const query = `
     UPDATE courses 
     SET course_name = ?, description = ?, duration = ?, instructor = ?, image_url = ? 
     WHERE course_id = ?
   `;
 
-  const values = [course_name, description, duration, instructor, imageUrls.join(','), courseId];
+  // Create an array of values for the query
+  const values = [course_name, description, duration, instructor, fileUrls.join(','), courseId];
 
+  // Execute the query
   db.query(query, values, (error, results) => {
     if (error) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Internal Server Error'
       });
-      return;
     }
 
     res.status(200).json({
@@ -83,8 +79,7 @@ export const updateCourse = (req, res) => {
   });
 };
 
-// DELETE COURSE 
-
+// DELETE COURSE
 export const deleteCourse = (req, res) => {
   const courseId = req.params.id;
 
@@ -92,11 +87,10 @@ export const deleteCourse = (req, res) => {
 
   db.query(query, [courseId], (error, results) => {
     if (error) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Internal Server Error'
       });
-      return;
     }
 
     res.status(200).json({
@@ -106,8 +100,6 @@ export const deleteCourse = (req, res) => {
   });
 };
 
-
-
 // Get course by ID
 export const getCourseById = (req, res) => {
   const courseId = req.params.id;
@@ -116,19 +108,17 @@ export const getCourseById = (req, res) => {
 
   db.query(query, [courseId], (error, results) => {
     if (error) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Internal Server Error'
       });
-      return;
     }
 
     if (results.length === 0) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         error: 'Course not found'
       });
-      return;
     }
 
     res.status(200).json({
@@ -144,11 +134,10 @@ export const getAllCourses = (req, res) => {
 
   db.query(query, (error, results) => {
     if (error) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Internal Server Error'
       });
-      return;
     }
 
     res.status(200).json({
@@ -157,4 +146,3 @@ export const getAllCourses = (req, res) => {
     });
   });
 };
-

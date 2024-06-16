@@ -4,23 +4,41 @@ import {db} from '../config/dbConnection.js';
 export const createStudent = (req, res) => {
     const { std_id, user_id, studentIDNumber, first_name, last_name, email, contact_no, gender, address } = req.body;
 
-    const sql = `INSERT INTO students (std_id, user_id, studentIDNumber, first_name, last_name, email, contact_no, gender, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    const values = [std_id, user_id, studentIDNumber, first_name, last_name, email, contact_no, gender, address];
+    // Query to fetch username, email, and password from users table
+    const getUserQuery = 'SELECT username, email, password FROM users WHERE user_id = ?';
 
-    db.query(sql, values, (err, result) => {
+    db.query(getUserQuery, [user_id], (err, userResult) => {
         if (err) {
-            console.error('Error executing SQL:', err);
-            res.status(500).json({ error: 'Error inserting data' });
-            return;
+            console.error('Error fetching user data:', err);
+            return res.status(500).json({ success: false, error: 'Error inserting data' });
         }
-        console.log('Data inserted successfully');
-        res.status(201).json({
-            success : true,
-            data : result,
-            message: 'Student created successfully'
+
+        if (userResult.length === 0) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        const { username, email, password } = userResult[0];
+
+        // Insert into students table
+        const sql = `INSERT INTO students (std_id, user_id, studentIDNumber, first_name, last_name, email, contact_no, gender, address, username, password) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const values = [std_id, user_id, studentIDNumber, first_name, last_name, email, contact_no, gender, address, username, password];
+
+        db.query(sql, values, (err, result) => {
+            if (err) {
+                console.error('Error executing SQL:', err);
+                return res.status(500).json({ success: false, error: 'Error inserting data' });
+            }
+
+            console.log('Data inserted successfully');
+            res.status(201).json({
+                success: true,
+                message: 'Student created successfully'
+            });
         });
     });
 };
+
 
 // Update student by ID
 export const updateStudent = (req, res) => {
@@ -36,8 +54,8 @@ export const updateStudent = (req, res) => {
         }
 
         // Update student table
-        const studentSql = `UPDATE students SET user_id = ?, username = ?, email = ?, password = ?, studentIDNumber = ?, first_name = ?, last_name = ?, contact_no = ?, gender = ?, address = ? WHERE std_id = ?`;
-        const studentValues = [user_id, username, email, password, studentIDNumber, first_name, last_name, contact_no, gender, address, studentId];
+        const studentSql = `UPDATE students SET user_id = ?, studentIDNumber = ?, first_name = ?, last_name = ?, email = ?, contact_no = ?, gender = ?, address = ?, username = ?, password = ? WHERE std_id = ?`;
+        const studentValues = [user_id, studentIDNumber, first_name, last_name, email, contact_no, gender, address, username, password, studentId];
 
         db.query(studentSql, studentValues, (studentErr, studentResult) => {
             if (studentErr) {
@@ -104,42 +122,48 @@ export const deleteStudent = (req, res) => {
 export const getStudentById = (req, res) => {
     const studentId = req.params.id;
 
-    const sql = `SELECT * FROM students WHERE std_id = ?`;
-    const values = [studentId];
+    // Query to fetch student details including username, email, and password
+    const sql = `SELECT s.*, u.username, u.email, u.password 
+                 FROM students s
+                 LEFT JOIN users u ON s.user_id = u.user_id
+                 WHERE s.std_id = ?`;
 
-    db.query(sql, values, (err, result) => {
+    db.query(sql, [studentId], (err, result) => {
         if (err) {
             console.error('Error executing SQL:', err);
-            res.status(500).json({ error: 'Error fetching student' });
-            return;
+            return res.status(500).json({ success: false, error: 'Error fetching student' });
         }
+
         if (result.length === 0) {
-            res.status(404).json({ error: 'Student not found' });
-            return;
+            return res.status(404).json({ success: false, error: 'Student not found' });
         }
+
         const student = result[0];
         res.json({
-            success : true,
-            data : student,
-            msg: "Fetch student data successfully."
+            success: true,
+            data: student,
+            message: 'Fetch student data successfully.'
         });
     });
 };
 
 // Get all students
 export const getAllStudents = (req, res) => {
-    const sql = `SELECT * FROM students`;
+    // Query to fetch all students with username, email, and password
+    const sql = `SELECT s.*, u.username, u.email, u.password 
+                 FROM students s
+                 LEFT JOIN users u ON s.user_id = u.user_id`;
 
     db.query(sql, (err, result) => {
         if (err) {
             console.error('Error executing SQL:', err);
-            res.status(500).json({ error: 'Error fetching students' });
-            return;
+            return res.status(500).json({ success: false, error: 'Error fetching students' });
         }
+
         res.json({
-            success : true,
-            data : result,
-            msg: "Fetch All students data successfully."
+            success: true,
+            data: result,
+            message: 'Fetch all students data successfully.'
         });
     });
 };

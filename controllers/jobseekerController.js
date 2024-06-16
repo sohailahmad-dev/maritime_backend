@@ -1,25 +1,65 @@
 import { db } from "../config/dbConnection.js";
 
+
+
 // Create job seeker
 export const createJobSeeker = (req, res) => {
-    const { jobSeeker_id, user_id, resumeURL, skills, workExperience, education, certifications, languages } = req.body;
+    const { user_id, resumeURL, skills, workExperience, education, certifications, languages } = req.body;
 
-    const sql = `INSERT INTO jobseekers (jobSeeker_id, user_id, resumeURL, skills, workExperience, education, certifications, languages) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-    const values = [jobSeeker_id, user_id, resumeURL, skills, workExperience, education, certifications, languages];
+    // Query to fetch username, email, and password from users table
+    const getUserQuery = 'SELECT username, email, password FROM users WHERE user_id = ?';
 
-    db.query(sql, values, (err, result) => {
+    db.query(getUserQuery, [user_id], (err, userResult) => {
         if (err) {
-            console.error('Error executing SQL:', err);
-            res.status(500).json({
+            console.error('Error fetching user data:', err);
+            return res.status(500).json({
                 success: false,
-                error: 'Error inserting data'
+                error: 'Error fetching user data'
             });
-            return;
         }
-        console.log('Data inserted successfully');
-        res.status(201).json({
-            success: true,
-            message: 'Job seeker created successfully'
+
+        if (userResult.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        const { username, email, password } = userResult[0];
+
+        // Insert into jobseekers table
+        const insertJobSeekerQuery = `
+            INSERT INTO jobseekers 
+            (user_id, username, email, password, resumeURL, skills, workExperience, education, certifications, languages) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const values = [
+            user_id,
+            username,
+            email,
+            password,
+            resumeURL,
+            skills,
+            workExperience,
+            education,
+            certifications,
+            languages
+        ];
+
+        db.query(insertJobSeekerQuery, values, (err, result) => {
+            if (err) {
+                console.error('Error executing SQL:', err);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Error inserting data'
+                });
+            }
+
+            console.log('Data inserted successfully');
+            res.status(201).json({
+                success: true,
+                message: 'Job seeker created successfully'
+            });
         });
     });
 };
@@ -27,11 +67,11 @@ export const createJobSeeker = (req, res) => {
 // Update job seeker by ID
 export const updateJobSeeker = (req, res) => {
     const jobSeekerId = req.params.id;
-    const { user_id,username, email, password, resumeURL, skills, workExperience, education, certifications, languages } = req.body;
+    const { user_id, username, email, password, resumeURL, skills, workExperience, education, certifications, languages } = req.body;
 
     // Update jobseekers table
-    const jobSeekerUpdateSql = `UPDATE jobseekers SET user_id = ?, username = ?, email = ?, password = ?, resumeURL = ?, skills = ?, workExperience = ?, education = ?, certifications = ?, languages = ? WHERE jobSeeker_id = ?`;
-    const jobSeekerUpdateValues = [user_id,username, email, password, resumeURL, skills, workExperience, education, certifications, languages, jobSeekerId];
+    const jobSeekerUpdateSql = `UPDATE jobseekers SET user_id = ?, resumeURL = ?, skills = ?, workExperience = ?, education = ?, certifications = ?, languages = ? WHERE jobSeeker_id = ?`;
+    const jobSeekerUpdateValues = [user_id, resumeURL, skills, workExperience, education, certifications, languages, jobSeekerId];
 
     // Update user table
     const userUpdateSql = `UPDATE users SET username = ?, email = ?, password = ? WHERE user_id = ?`;
@@ -96,7 +136,6 @@ export const updateJobSeeker = (req, res) => {
     });
 };
 
-
 // Delete job seeker by ID
 export const deleteJobSeeker = (req, res) => {
     const jobSeekerId = req.params.id;
@@ -125,10 +164,13 @@ export const deleteJobSeeker = (req, res) => {
 export const getJobSeekerById = (req, res) => {
     const jobSeekerId = req.params.id;
 
-    const sql = `SELECT * FROM jobseekers WHERE jobSeeker_id = ?`;
-    const values = [jobSeekerId];
+    // Query to fetch job seeker details including username, email, and password
+    const sql = `SELECT js.*, u.username, u.email, u.password 
+                 FROM jobseekers js
+                 LEFT JOIN users u ON js.user_id = u.user_id
+                 WHERE js.jobSeeker_id = ?`;
 
-    db.query(sql, values, (err, result) => {
+    db.query(sql, [jobSeekerId], (err, result) => {
         if (err) {
             console.error('Error executing SQL:', err);
             res.status(500).json({
@@ -138,7 +180,10 @@ export const getJobSeekerById = (req, res) => {
             return;
         }
         if (result.length === 0) {
-            res.status(404).json({ error: 'Job seeker not found' });
+            res.status(404).json({ 
+                success: false,
+                error: 'Job seeker not found' 
+            });
             return;
         }
         const jobSeeker = result[0];
@@ -152,7 +197,9 @@ export const getJobSeekerById = (req, res) => {
 
 // Get all job seekers
 export const getAllJobSeekers = (req, res) => {
-    const sql = `SELECT * FROM jobseekers`;
+    const sql = `SELECT js.*, u.username, u.email, u.password 
+                 FROM jobseekers js
+                 LEFT JOIN users u ON js.user_id = u.user_id`;
 
     db.query(sql, (err, result) => {
         if (err) {

@@ -2,23 +2,63 @@ import {db} from '../config/dbConnection.js';
 
 // Create employer
 export const createEmployer = (req, res) => {
-    const { employer_id, user_id, company_name, contact_email, contact_number, company_website, company_size, location, description } = req.body;
+    const { user_id, company_name, contact_email, contact_number, company_website, company_size, location, description } = req.body;
 
-    const sql = `INSERT INTO employers (employer_id, user_id, company_name, contact_email, contact_number, company_website, company_size, location, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    const values = [employer_id, user_id, company_name, contact_email, contact_number, company_website, company_size, location, description];
+    // Query to fetch username, email, and password from users table
+    const getUserQuery = 'SELECT username, email, password FROM users WHERE user_id = ?';
 
-    db.query(sql, values, (err, result) => {
+    db.query(getUserQuery, [user_id], (err, userResult) => {
         if (err) {
-            console.error('Error executing SQL:', err);
-            res.status(500).json({ 
+            console.error('Error fetching user data:', err);
+            return res.status(500).json({
                 success: false,
-                error: 'Error inserting data' });
-            return;
+                error: 'Error fetching user data'
+            });
         }
-        console.log('Data inserted successfully');
-        res.status(201).json({
-            success : true,
-            message: 'Employer created successfully'
+
+        if (userResult.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        const { username, email, password } = userResult[0];
+
+        // Insert into employers table
+        const insertEmployerQuery = `
+            INSERT INTO employers 
+            (user_id, username, email, password, company_name, contact_email, contact_number, company_website, company_size, location, description) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const values = [
+            user_id,
+            username,
+            email,
+            password,
+            company_name,
+            contact_email,
+            contact_number,
+            company_website,
+            company_size,
+            location,
+            description
+        ];
+
+        db.query(insertEmployerQuery, values, (err, result) => {
+            if (err) {
+                console.error('Error executing SQL:', err);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Error inserting data'
+                });
+            }
+
+            console.log('Data inserted successfully');
+            res.status(201).json({
+                success: true,
+                message: 'Employer created successfully'
+            });
         });
     });
 };
@@ -117,52 +157,52 @@ export const deleteEmployer = (req, res) => {
     });
 };
 
+
 // Get employer by ID
 export const getEmployerById = (req, res) => {
     const employerId = req.params.id;
 
-    const sql = `SELECT * FROM employers WHERE employer_id = ?`;
-    const values = [employerId];
+    // Query to fetch employer details including username, email, and password from users table
+    const sql = `SELECT e.*, u.username, u.email, u.password 
+                 FROM employers e
+                 LEFT JOIN users u ON e.user_id = u.user_id
+                 WHERE e.employer_id = ?`;
 
-    db.query(sql, values, (err, result) => {
+    db.query(sql, [employerId], (err, result) => {
         if (err) {
             console.error('Error executing SQL:', err);
-            res.status(500).json({ 
-                success: false,
-                error: 'Error fetching employer' });
-            return;
+            return res.status(500).json({ success: false, error: 'Error fetching employer' });
         }
+
         if (result.length === 0) {
-            res.status(404).json({ 
-                success: false,
-                error: 'Employer not found' });
-            return;
+            return res.status(404).json({ success: false, error: 'Employer not found' });
         }
+
         const employer = result[0];
         res.json({
-            success : true,
-            data : employer,
-            msg: "Fetch employer data successfully."
+            success: true,
+            data: employer,
+            message: 'Fetch employer data successfully.'
         });
     });
 };
 
 // Get all employers
 export const getAllEmployers = (req, res) => {
-    const sql = `SELECT * FROM employers`;
+    const sql = `SELECT e.*, u.username, u.email, u.password 
+                 FROM employers e
+                 LEFT JOIN users u ON e.user_id = u.user_id`;
 
     db.query(sql, (err, result) => {
         if (err) {
             console.error('Error executing SQL:', err);
-            res.status(500).json({ 
-                success: false,
-                error: 'Error fetching employers' });
-            return;
+            return res.status(500).json({ success: false, error: 'Error fetching employers' });
         }
+
         res.json({
-            success : true,
-            data : result,
-            msg: "Fetch All employers data successfully."
+            success: true,
+            data: result,
+            message: 'Fetch all employers data successfully.'
         });
     });
 };
