@@ -57,6 +57,17 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
 
+      - name: Create MySQL Flexible Server
+        run: |
+          az mysql flexible-server create \
+            --resource-group MaritimeEducation_group \
+            --name maritime \
+            --admin-user ${{ secrets.MYSQL_ADMIN_USER }} \
+            --admin-password ${{ secrets.MYSQL_ADMIN_PASSWORD }} \
+            --location eastus \
+            --sku-name Standard_B1ms \
+            --storage-size 32
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         id: deploy-to-webapp
@@ -67,7 +78,7 @@ jobs:
 
       - name: Set environment variables in Azure App Service
         run: |
-          az webapp config appsettings set --name 'MaritimeEdu' --resource-group 'YourResourceGroupName' --settings MYSQL_HOST=${{ secrets.MYSQL_HOST }} MYSQL_USER=${{ secrets.MYSQL_USER }} MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }} MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
+          az webapp config appsettings set --name 'MaritimeEdu' --resource-group 'MaritimeEducation_group' --settings MYSQL_HOST=${{ secrets.MYSQL_HOST }} MYSQL_USER=${{ secrets.MYSQL_USER }} MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }} MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
         env:
           AZURE_WEBAPP_NAME: 'MaritimeEdu'
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
