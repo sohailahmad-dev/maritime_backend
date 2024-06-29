@@ -65,7 +65,10 @@ app.use((err, req, res, next) => {
 });
 
 
-
+app.use(express.static("./maritime_frontend"));
+app.get("*" , (req , res) => {
+  res.sendFile(path.resolver(__dirname , "maritime_frontend" , "build" , "index.html"))
+});
 
 app.listen(8000, ()=> { 
     console.log("Server is ruuning on port 8000.");
