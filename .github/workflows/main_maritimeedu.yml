@@ -11,7 +11,24 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      - name: Enable long paths support
+        run: git config --system core.longpaths true
+
       - uses: actions/checkout@v4
+        with:
+          repository: sohailahmad-dev/maritime_backend
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ssh-strict: true
+          ssh-user: git
+          persist-credentials: true
+          clean: true
+          sparse-checkout-cone-mode: true
+          fetch-depth: 1
+          fetch-tags: false
+          show-progress: true
+          lfs: false
+          submodules: false
+          set-safe-directory: true
 
       - name: Set up Node.js version
         uses: actions/setup-node@v3
