@@ -423,3 +423,55 @@ export const logout = async (res, req) => {
         res.status(200).json({ message: 'Logout successful' });
     });
 };
+
+// FIND USER BY EMAIL, USERNAME, OR USER ID
+export const findUser = async (req, res) => {
+    const { email, username, userId } = req.body; // Assuming these are parameters in the query string
+
+    try {
+        let query = 'SELECT * FROM users WHERE ';
+        const queryParams = [];
+
+        if (email) {
+            query += 'email = ? ';
+            queryParams.push(email);
+        } else if (username) {
+            query += 'username = ? ';
+            queryParams.push(username);
+        } else if (userId) {
+            query += 'user_id = ? ';
+            queryParams.push(userId);
+        } else {
+            return res.status(400).send({
+                msg: 'Missing parameters'
+            });
+        }
+
+        // Execute the query
+        db.query(query, queryParams, (error, result) => {
+            if (error) {
+                console.error('Error:', error);
+                return res.status(500).send({
+                    msg: 'Internal Server Error'
+                });
+            }
+
+            if (!result.length) {
+                return res.status(404).send({
+                    msg: 'User not found'
+                });
+            }
+
+            return res.status(200).send({
+                success: true,
+                data: result[0], // Assuming only one user will be returned
+                msg: 'User found successfully'
+            });
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        return res.status(500).send({
+            msg: 'Internal Server Error'
+        });
+    }
+};
