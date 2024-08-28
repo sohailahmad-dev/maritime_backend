@@ -53,6 +53,11 @@ app.use(
 
 app.use('/api', userRoute , courseRouter, trainingRouter , adminRouter , jobSeekerRouter , employerRouter , studentRouter , jobRouter , applicationRouter, jobApplicationRouter, messageRouter, notificationRouter, resumeRoute);
 
+app.get('/', (req, res) => {
+    
+  res.send("App Config Successfully");
+  
+});
 
 app.use((err, req, res, next) => {
 
